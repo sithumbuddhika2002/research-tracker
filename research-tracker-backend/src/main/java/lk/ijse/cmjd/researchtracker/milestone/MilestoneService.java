@@ -31,12 +31,20 @@ public class MilestoneService {
         throw new RuntimeException("Project not found");
     }
 
-    public Optional<Milestone> updateMilestone(String id, Milestone milestoneDetails) {
+    public Optional<Milestone> updateMilestone(String id, UpdateMilestoneRequest request) {
         return milestoneRepository.findById(id).map(milestone -> {
-            milestone.setTitle(milestoneDetails.getTitle());
-            milestone.setDescription(milestoneDetails.getDescription());
-            milestone.setDueDate(milestoneDetails.getDueDate());
-            milestone.setCompleted(milestoneDetails.isCompleted());  // Now works!
+            if (request.getTitle() != null) {
+                milestone.setTitle(request.getTitle());
+            }
+            if (request.getDescription() != null) {
+                milestone.setDescription(request.getDescription());
+            }
+            if (request.getDueDate() != null) {
+                milestone.setDueDate(request.getDueDate());
+            }
+            if (request.getCompleted() != null) {
+                milestone.setCompleted(request.getCompleted());
+            }
             return milestoneRepository.save(milestone);
         });
     }

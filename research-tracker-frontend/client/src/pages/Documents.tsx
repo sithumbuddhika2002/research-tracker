@@ -89,17 +89,15 @@ export default function Documents() {
       uploadFormData.append('file', uploadFile);
       uploadFormData.append('title', formData.title);
       uploadFormData.append('description', formData.description);
-
-      await api.post(`/projects/${selectedProjectId}/documents/upload`, uploadFormData, {
+      await api.post(`/projects/${selectedProjectId}/documents`, uploadFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
       toast.success('Document uploaded successfully');
-      setFormData({ title: '', description: '' });
-      setUploadFile(null);
       setDialogOpen(false);
+      setUploadFile(null);
+      setFormData({ title: '', description: '' });
       fetchDocuments();
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -108,12 +106,10 @@ export default function Documents() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      await api.delete(`/projects/${selectedProjectId}/documents/${id}`);
+      await api.delete(`/documents/${id}`);
       toast.success('Document deleted successfully');
       fetchDocuments();
     } catch (error: any) {
@@ -121,29 +117,33 @@ export default function Documents() {
     }
   };
 
-  const handleDownload = async (id: string, title: string) => {
-    try {
-      const response = await api.get(`/projects/${selectedProjectId}/documents/${id}/download`, {
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', title);
-      document.body.appendChild(link);
-      link.click();
-      link.parentElement?.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error: any) {
-      toast.error('Failed to download document');
-    }
-  };
+const handleDownload = async (id: string, title: string) => {
+  try {
+    const response = await api.get(`/documents/${id}/download`, {
+      responseType: 'blob',
+    });
+    
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
+    const blob = new Blob([response.data], { type: contentType });
+    
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', title);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error: any) {
+    console.error('Download error:', error);
+    toast.error(error.response?.data?.message || 'Failed to download document');
+  }
+};
 
   const filteredDocuments = documents.filter(
-    (doc) =>
-      doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    (d) =>
+      d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -155,70 +155,70 @@ export default function Documents() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex justify-between items-center mb-8"
+            className="mb-8"
           >
-            <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">Documents</h1>
-              <p className="text-muted-foreground">Manage research documents and files</p>
-            </div>
-            {hasRole([UserRole.ADMIN, UserRole.PI]) && (
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus size={20} />
-                    Upload Document
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Upload New Document</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleUpload} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Project</label>
-                      <select
-                        value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      >
-                        {projects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Title</label>
-                      <Input
-                        placeholder="Document title"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Description</label>
-                      <Input
-                        placeholder="Document description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">File</label>
-                      <Input
-                        type="file"
-                        onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">
-                      <Upload size={20} />
-                      Upload
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground mb-2">Documents</h1>
+                <p className="text-muted-foreground">Manage your research documents and files</p>
+              </div>
+              {hasRole([UserRole.ADMIN, UserRole.PI, UserRole.MEMBER]) && (
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2">
+                      <Plus size={20} />
+                      Upload Document
                     </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            )}
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Upload New Document</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleUpload} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Project</label>
+                        <select
+                          value={selectedProjectId}
+                          onChange={(e) => setSelectedProjectId(e.target.value)}
+                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                        >
+                          {projects.map((project) => (
+                            <option key={project.id} value={project.id}>
+                              {project.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Title</label>
+                        <Input
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Description</label>
+                        <Input
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">File</label>
+                        <Input
+                          type="file"
+                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full gap-2">
+                        <Upload size={16} />
+                        Upload
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </motion.div>
 
           {/* Project Selector */}
@@ -244,7 +244,7 @@ export default function Documents() {
             </motion.div>
           )}
 
-          {/* Search Bar */}
+          {/* Search */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -252,12 +252,12 @@ export default function Documents() {
             className="mb-6"
           >
             <div className="relative">
-              <Search className="absolute left-3 top-3 text-muted-foreground" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
               <Input
                 placeholder="Search documents..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11"
+                className="pl-10"
               />
             </div>
           </motion.div>

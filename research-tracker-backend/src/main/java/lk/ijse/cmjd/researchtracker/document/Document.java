@@ -31,7 +31,14 @@ public class Document {
 
     private String description;
 
-    private String urlOrPath;
+    private String fileName;
+
+    private String contentType;
+
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @JsonIgnore
+    private byte[] content;
 
     @ManyToOne
     @JoinColumn(name = "uploaded_by_id")

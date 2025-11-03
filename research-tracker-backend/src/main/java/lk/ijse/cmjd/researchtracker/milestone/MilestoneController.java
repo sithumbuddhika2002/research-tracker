@@ -29,8 +29,8 @@ public class MilestoneController {
 
     @PutMapping("/api/milestones/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PI', 'MEMBER')")
-    public ResponseEntity<Milestone> updateMilestone(@PathVariable String id, @RequestBody Milestone milestoneDetails) {
-        Optional<Milestone> updatedMilestone = service.updateMilestone(id, milestoneDetails);
+    public ResponseEntity<Milestone> updateMilestone(@PathVariable String id, @RequestBody UpdateMilestoneRequest request) {
+        Optional<Milestone> updatedMilestone = service.updateMilestone(id, request);
         return updatedMilestone.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

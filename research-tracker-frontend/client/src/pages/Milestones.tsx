@@ -87,7 +87,7 @@ export default function Milestones() {
 
     try {
       if (editingId) {
-        await api.put(`/projects/${selectedProjectId}/milestones/${editingId}`, formData);
+        await api.put(`/milestones/${editingId}`, formData);
         toast.success('Milestone updated successfully');
       } else {
         await api.post(`/projects/${selectedProjectId}/milestones`, formData);
@@ -107,7 +107,7 @@ export default function Milestones() {
     if (!window.confirm('Are you sure you want to delete this milestone?')) return;
 
     try {
-      await api.delete(`/projects/${selectedProjectId}/milestones/${id}`);
+      await api.delete(`/milestones/${id}`);
       toast.success('Milestone deleted successfully');
       fetchMilestones();
     } catch (error: any) {
@@ -117,8 +117,8 @@ export default function Milestones() {
 
   const handleToggleComplete = async (milestone: Milestone) => {
     try {
-      await api.put(`/projects/${selectedProjectId}/milestones/${milestone.id}`, {
-        isCompleted: !milestone.isCompleted,
+      await api.put(`/milestones/${milestone.id}`, {
+        completed: !milestone.completed,
       });
       toast.success('Milestone updated successfully');
       fetchMilestones();
@@ -187,7 +187,6 @@ export default function Milestones() {
                       <div>
                         <label className="block text-sm font-medium mb-2">Title</label>
                         <Input
-                          placeholder="Milestone title"
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         />
@@ -195,7 +194,6 @@ export default function Milestones() {
                       <div>
                         <label className="block text-sm font-medium mb-2">Description</label>
                         <Input
-                          placeholder="Milestone description"
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         />
@@ -266,8 +264,8 @@ export default function Milestones() {
               className="space-y-4"
             >
               {sortedMilestones.map((milestone, index) => {
-                const isOverdue = isPast(new Date(milestone.dueDate)) && !milestone.isCompleted;
-                const isUpcoming = !isPast(new Date(milestone.dueDate)) && !milestone.isCompleted;
+                const isOverdue = isPast(new Date(milestone.dueDate)) && !milestone.completed;
+                const isUpcoming = !isPast(new Date(milestone.dueDate)) && !milestone.completed;
 
                 return (
                   <motion.div
@@ -277,7 +275,7 @@ export default function Milestones() {
                     transition={{ delay: index * 0.05 }}
                   >
                     <Card className={`p-6 border-l-4 ${
-                      milestone.isCompleted
+                      milestone.completed
                         ? 'border-l-green-500 bg-green-50/30'
                         : isOverdue
                         ? 'border-l-destructive bg-destructive/5'
@@ -290,7 +288,7 @@ export default function Milestones() {
                           onClick={() => handleToggleComplete(milestone)}
                           className="mt-1 flex-shrink-0"
                         >
-                          {milestone.isCompleted ? (
+                          {milestone.completed ? (
                             <CheckCircle2 className="text-green-500" size={24} />
                           ) : (
                             <Circle className="text-muted-foreground hover:text-primary transition-colors" size={24} />
@@ -299,7 +297,7 @@ export default function Milestones() {
 
                         <div className="flex-1 min-w-0">
                           <h3 className={`font-semibold text-lg ${
-                            milestone.isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'
+                            milestone.completed ? 'line-through text-muted-foreground' : 'text-foreground'
                           }`}>
                             {milestone.title}
                           </h3>
@@ -316,7 +314,7 @@ export default function Milestones() {
                         </div>
 
                         <div className="flex gap-2 flex-shrink-0">
-                          {hasRole([UserRole.ADMIN, UserRole.PI]) && !milestone.isCompleted && (
+                          {hasRole([UserRole.ADMIN, UserRole.PI]) && !milestone.completed && (
                             <>
                               <Button
                                 variant="ghost"

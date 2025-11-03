@@ -6,7 +6,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -16,16 +15,18 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final ProjectRepository projectRepository;
-    private static final String UPLOAD_DIR = "uploads/";
 
     public DocumentService(DocumentRepository documentRepository, ProjectRepository projectRepository) {
         this.documentRepository = documentRepository;
         this.projectRepository = projectRepository;
-        new File(UPLOAD_DIR).mkdirs();
     }
 
     public List<Document> getDocumentsByProject(String projectId) {
         return documentRepository.findByProjectId(projectId);
+    }
+
+    public Optional<Document> getDocumentById(String id) {
+        return documentRepository.findById(id);
     }
 
     public Document uploadDocument(String projectId, MultipartFile file, String title, String description) throws IOException {
@@ -34,14 +35,18 @@ public class DocumentService {
             throw new RuntimeException("Project not found");
         }
 
-        String filePath = UPLOAD_DIR + file.getOriginalFilename();
-        file.transferTo(new File(filePath));
+        String contentType = file.getContentType();
+        if (contentType == null || contentType.isEmpty()) {
+            contentType = "application/octet-stream";
+        }
 
         Document document = Document.builder()
                 .project(project.get())
                 .title(title)
                 .description(description)
-                .urlOrPath(filePath)
+                .fileName(file.getOriginalFilename())
+                .contentType(contentType)
+                .content(file.getBytes())
                 .uploadedBy((lk.ijse.cmjd.researchtracker.user.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
                 .build();
 
@@ -49,10 +54,6 @@ public class DocumentService {
     }
 
     public void deleteDocument(String id) {
-        Optional<Document> document = documentRepository.findById(id);
-        document.ifPresent(doc -> {
-            new File(doc.getUrlOrPath()).delete();
-            documentRepository.deleteById(id);
-        });
+        documentRepository.deleteById(id);
     }
 }

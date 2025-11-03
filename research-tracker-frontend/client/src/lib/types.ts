@@ -45,7 +45,7 @@ export interface Milestone {
   title: string;
   description: string;
   dueDate: string;
-  isCompleted: boolean;
+  completed: boolean;
   createdBy: User;
 }
 
@@ -54,7 +54,8 @@ export interface Document {
   project: Project;
   title: string;
   description: string;
-  urlOrPath: string;
+  fileName: string;
+  contentType: string;
   uploadedBy: User;
   uploadedAt: string;
 }
@@ -85,11 +86,25 @@ export interface UpdateMilestoneRequest {
   title?: string;
   description?: string;
   dueDate?: string;
-  isCompleted?: boolean;
+  completed?: boolean;
 }
 
 export interface CreateDocumentRequest {
   title: string;
   description: string;
   file: File;
+}
+
+// add to the existing file
+export interface CreateUserRequest {
+  username: string;
+  fullName: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface UpdateUserRequest {
+  fullName: string;
+  username?: string;
+  role: UserRole;
 }
